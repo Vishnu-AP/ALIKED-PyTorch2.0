@@ -6,13 +6,13 @@ import argparse
 import numpy as np
 from copy import deepcopy
 
-# --- Add path for utils ---
 import sys
-sys.path.append("/home/art5gpc8/Desktop/Mapping/3DSemanticMapping/scripts/utils")
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+utils_path = os.path.join(project_root, 'scripts')
+sys.path.append(utils_path)
 
-# --- Import custom feature extractors ---
 from nets.aliked import ALIKED
-from utils import extract_ORB_features, extract_SIFT_features, extract_SuperPoint_features, load_superpoint_model
+from utils.utils import extract_ORB_features, extract_SIFT_features, extract_SuperPoint_features, load_superpoint_model
 
 
 class ImageLoader(object):
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('--feature', choices=['SIFT', 'SP', 'ORB', 'ALIKED'], default='ALIKED',
                         help="Feature extractor to use")
     parser.add_argument('--model', choices=['aliked-t16', 'aliked-n16', 'aliked-n16rot', 'aliked-n32'],
-                        default="aliked-n16rot",
+                        default="aliked-n32",
                         help="ALIKED model configuration (only used if --feature=ALIKED)")
     parser.add_argument('--device', type=str, default='cuda', help="Running device (default: cuda).")
     parser.add_argument('--top_k', type=int, default=-1,
@@ -143,11 +143,13 @@ if __name__ == '__main__':
         kpts_ref, desc_ref = extract_ORB_features(img_ref)
         kpts_ref = np.array([k.pt for k in kpts_ref])
     elif args.feature == 'SP':
-        kpts_ref, kpts_ref, heatmap = extract_SuperPoint_features(img_ref, superpoint_model)
-        kpts_ref = kpts_ref.T
+        img_grey = cv2.cvtColor(img_ref, cv2.COLOR_BGR2GRAY)
+        kpts_ref, desc_ref, heatmap = extract_SuperPoint_features(img_grey, superpoint_model)
+        kpts_ref = np.array([k.pt for k in kpts_ref])
+        desc_ref = desc_ref.T
     elif args.feature == 'ALIKED':
         img_rgb = cv2.cvtColor(img_ref, cv2.COLOR_BGR2RGB)
-        feats_ref = extractor.extract(img_rgb)
+        feats_ref = extractor.run(img_rgb)
         kpts_ref, desc_ref = feats_ref['keypoints'], feats_ref['descriptors']
 
     for i in range(1, len(image_loader)):
@@ -162,11 +164,13 @@ if __name__ == '__main__':
             kpts, desc = extract_ORB_features(img)
             kpts = np.array([k.pt for k in kpts])
         elif args.feature == 'SP':
-            kpts, desc, heatmap = extract_SuperPoint_features(img, superpoint_model)
-            kpts = kpts.T
+            img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            kpts, desc, heatmap = extract_SuperPoint_features(img_grey, superpoint_model)
+            kpts = np.array([k.pt for k in kpts])
+            desc = desc.T
         elif args.feature == 'ALIKED':
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            feats = extractor.extract(img_rgb)
+            feats = extractor.run(img_rgb)
             kpts, desc = feats['keypoints'], feats['descriptors']
 
         matches = mnn_mather(desc_ref, desc)
