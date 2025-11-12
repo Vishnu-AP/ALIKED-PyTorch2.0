@@ -14,7 +14,7 @@ sys.path.append("/home/art5gpc8/Desktop/Mapping/3DSemanticMapping/scripts/")
 
 # --- Import custom feature extractors ---
 from nets.aliked import ALIKED
-from utils.utils import extract_ORB_features, extract_SIFT_features, extract_SuperPoint_features, load_superpoint_model
+from utils.utils import extract_ORB_features, extract_SIFT_features, _extract_SuperPoint_features, _load_superpoint_model
 
 
 class ImageLoader(object):
@@ -151,7 +151,7 @@ if __name__ == '__main__':
                            scores_th=args.scores_th,
                            n_limit=args.n_limit)
     elif args.feature == 'SP':
-        extractor = load_superpoint_model(args.device)
+        extractor = _load_superpoint_model(args.device)
     else:
         extractor = args.feature  # placeholder string for SIFT/ORB
 
@@ -176,10 +176,8 @@ if __name__ == '__main__':
             kpts = np.array([k.pt for k in kpts])
             pred = {'keypoints': kpts, 'descriptors': desc, 'time': 1e-6}
         elif args.feature == 'SP':
-            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY, img)
-            kpts, desc, heatmap = extract_SuperPoint_features(img_gray, extractor)
-            kpts = np.array([k.pt for k in kpts])
-            desc = desc.T
+            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            kpts, desc, heatmap = _extract_SuperPoint_features(img_gray, extractor)
             pred = {'keypoints': kpts, 'descriptors': desc, 'time': 1e-6, 'score_map': heatmap}
         elif args.feature == 'ALIKED':
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
